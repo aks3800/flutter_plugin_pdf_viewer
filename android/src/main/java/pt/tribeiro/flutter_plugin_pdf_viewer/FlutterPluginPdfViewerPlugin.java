@@ -1,32 +1,29 @@
 package pt.tribeiro.flutter_plugin_pdf_viewer;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
-import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
-import android.util.Log;
+import android.os.Process;
 
 import java.io.File;
 import java.io.FileOutputStream;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.os.HandlerThread;
-import android.os.Process;
-import android.os.Handler;
+import io.flutter.plugin.common.PluginRegistry;
 
 /**
  * FlutterPluginPdfViewerPlugin
  */
-public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
-    private static Registrar instance;
+public class FlutterPluginPdfViewerPlugin implements FlutterPlugin, MethodCallHandler {
     private HandlerThread handlerThread;
     private Handler backgroundHandler;
     private final Object pluginLocker = new Object();
@@ -34,10 +31,34 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
     /**
      * Plugin registration.
      */
-    public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
-        instance = registrar;
-        channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
+    public static void registerWith(PluginRegistry.Registrar registrar) {
+        FlutterPluginPdfViewerPlugin instance = new FlutterPluginPdfViewerPlugin();
+        instance.channel = new MethodChannel(registrar.messenger(), "flutter_plugin_pdf_viewer");
+        instance.channel.setMethodCallHandler(new FlutterPluginPdfViewerPlugin());
+        instance.context = registrar.context();
+    }
+
+    private Context context;
+    private MethodChannel channel;
+    @Override
+    public void onAttachedToEngine(FlutterPluginBinding binding) {
+        channel = new MethodChannel(binding.getBinaryMessenger(), "flutter_plugin_pdf_viewer");
+        context = binding.getApplicationContext();
+        channel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+        channel = null;
+        synchronized(pluginLocker){
+            if (backgroundHandler != null) try {
+                backgroundHandler.removeCallbacksAndMessages(null);
+                backgroundHandler.getLooper().quit();
+                handlerThread.interrupt();
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     @Override
@@ -101,7 +122,7 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
         File file;
         try {
             String fileName = String.format("%s-%d.png", filePath, page);
-            file = File.createTempFile(fileName, null, instance.context().getCacheDir());
+            file = File.createTempFile(fileName, null, context.getCacheDir());
             FileOutputStream out = new FileOutputStream(file);
             bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
             out.flush();
@@ -125,8 +146,8 @@ public class FlutterPluginPdfViewerPlugin implements MethodCallHandler {
 
             PdfRenderer.Page page = renderer.openPage(--pageNumber);
 
-            double width = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getWidth();
-            double height = instance.activity().getResources().getDisplayMetrics().densityDpi * page.getHeight();
+            double width = context.getResources().getDisplayMetrics().densityDpi * page.getWidth();
+            double height = context.getResources().getDisplayMetrics().densityDpi * page.getHeight();
             final double docRatio = width / height;
 
             width = 2048;
