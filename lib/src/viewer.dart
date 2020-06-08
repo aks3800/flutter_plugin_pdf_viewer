@@ -65,7 +65,7 @@ class _PDFViewerState extends State<PDFViewer> {
       _oldPage = _pageNumber;
       _page = await widget.document.get(page: _pageNumber);
     }
-    if(this.mounted) {
+    if (this.mounted) {
       setState(() => _isLoading = false);
     }
   }
@@ -123,7 +123,12 @@ class _PDFViewerState extends State<PDFViewer> {
     return Scaffold(
       body: Stack(
         children: <Widget>[
-          _isLoading ? Center(child: CircularProgressIndicator()) : _page,
+          _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                  valueColor: new AlwaysStoppedAnimation<Color>(Colors.blue),
+                ))
+              : _page,
           (widget.showIndicator && !_isLoading)
               ? _drawIndicator()
               : Container(),
