@@ -14,12 +14,14 @@ class PDFViewer extends StatefulWidget {
   final bool showPicker;
   final bool showNavigation;
   final PDFViewerTooltip tooltip;
+  final Color themeColor;
 
   PDFViewer(
       {Key key,
       @required this.document,
       this.indicatorText = Colors.white,
       this.indicatorBackground = Colors.black54,
+      this.themeColor = Colors.black,
       this.showIndicator = true,
       this.showPicker = true,
       this.showNavigation = true,
@@ -126,7 +128,8 @@ class _PDFViewerState extends State<PDFViewer> {
           _isLoading
               ? Center(
                   child: CircularProgressIndicator(
-                  valueColor: new AlwaysStoppedAnimation<Color>(Colors.blue),
+                  valueColor:
+                      new AlwaysStoppedAnimation<Color>(widget.themeColor),
                 ))
               : _page,
           (widget.showIndicator && !_isLoading)
@@ -153,6 +156,7 @@ class _PDFViewerState extends State<PDFViewer> {
                   Expanded(
                     child: IconButton(
                       icon: Icon(Icons.first_page),
+                      color: widget.themeColor,
                       tooltip: widget.tooltip.first,
                       onPressed: () {
                         _pageNumber = 1;
@@ -163,6 +167,7 @@ class _PDFViewerState extends State<PDFViewer> {
                   Expanded(
                     child: IconButton(
                       icon: Icon(Icons.chevron_left),
+                      color: widget.themeColor,
                       tooltip: widget.tooltip.previous,
                       onPressed: () {
                         _pageNumber--;
@@ -180,6 +185,7 @@ class _PDFViewerState extends State<PDFViewer> {
                     child: IconButton(
                       icon: Icon(Icons.chevron_right),
                       tooltip: widget.tooltip.next,
+                      color: widget.themeColor,
                       onPressed: () {
                         _pageNumber++;
                         if (widget.document.count < _pageNumber) {
@@ -192,6 +198,7 @@ class _PDFViewerState extends State<PDFViewer> {
                   Expanded(
                     child: IconButton(
                       icon: Icon(Icons.last_page),
+                      color: widget.themeColor,
                       tooltip: widget.tooltip.last,
                       onPressed: () {
                         _pageNumber = widget.document.count;
